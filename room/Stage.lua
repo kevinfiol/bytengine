@@ -11,13 +11,25 @@ function Stage:new()
     self.timer = Timer()
 
     -- create physics world for this room
-    self.area:addPhysicsWorld()
+    self.area:addPhysicsWorld(0, 9.81 * 64, true)
+
+    self.area.world:addCollisionClass('Ball')
+    self.area.world:addCollisionClass('Ground')
 
     -- add objects
-    self.hello = self.area:addGameObject('Hello',
+    self.ground = self.area:addGameObject('Ground',
+        0,
+        vars.gh - 30,
+        {
+            width = vars.gw,
+            height = 3
+        }
+    )
+
+    self.ball = self.area:addGameObject('Ball',
         vars.gw / 2,
-        vars.gh /2,
-        { size = 32 }
+        vars.gh / 2,
+        { radius = 12 }
     )
 end
 

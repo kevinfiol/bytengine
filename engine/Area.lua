@@ -99,8 +99,8 @@ function Area:getClosestObject(x, y, radius, object_types)
     return lowest.object
 end
 
-function Area:addPhysicsWorld()
-    self.world = Physics.newWorld(0, 0, true)
+function Area:addPhysicsWorld(xGravity, yGravity, bodiesCanSleep)
+    self.world = Physics.createNewWorld(xGravity, yGravity, bodiesCanSleep)
 end
 
 function Area:distance(x1, y1, x2, y2)

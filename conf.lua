@@ -1,4 +1,6 @@
 local vars = require 'vars'
+debugger = require 'lib.debugger' -- uncomment to enable debugger
+inspect = require 'lib.inspect'
 
 function love.conf(t)
     t.identity = nil                   -- The name of the save directory (string)
