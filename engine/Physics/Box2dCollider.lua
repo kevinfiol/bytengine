@@ -1,14 +1,15 @@
 local Object = require 'lib.classic'
 local utils = require 'engine.utils'
 
-local Collider = Object:extend()
+local Box2dCollider = Object:extend()
 
-function Collider:new(world, collider_type, ...)
+function Box2dCollider:new(world, collider_type, ...)
     local MAIN_KEY = 'main'
     self.id = utils.UUID()
     self.world = world
     self.type = collider_type
     self.object = nil
+    self.body = nil
 
     self.shapes = {}
     self.fixtures = {}
@@ -76,7 +77,7 @@ function Collider:new(world, collider_type, ...)
     fixture:setUserData(self)
 end
 
-function Collider:destroy()
+function Box2dCollider:destroy()
     for name, _ in pairs(self.fixtures) do
         self.shapes[name] = nil
         self.fixtures[name]:setUserData(nil) -- remove reference if exists
@@ -93,11 +94,11 @@ function Collider:destroy()
     self.fixtures = {}
 end
 
-function Collider:setObject(object)
+function Box2dCollider:setObject(object)
     self.object = object
 end
 
-function Collider:getPosition()
+function Box2dCollider:getPosition()
     local x, y = self.body:getPosition()
 
     if self.body_xOffset then x = x - self.body_xOffset end
@@ -106,7 +107,40 @@ function Collider:getPosition()
     return x, y
 end
 
-function Collider:setCollisionClass(collision_class_name)
+function Box2dCollider:setPosition(x, y)
+    local new_x, new_y = x, y
+
+    if self.body_xOffset then new_x = x - self.body_xOffset end
+    if self.body_yOffset then new_y = y - self.body_yOffset end
+
+    self.body:setPosition(new_x, new_y)
+end
+
+function Box2dCollider:getLinearVelocity()
+    return self.body:getLinearVelocity()
+end
+
+function Box2dCollider:setLinearVelocity(x, y)
+    self.body:setLinearVelocity(x, y)
+end
+
+function Box2dCollider:applyForce(fx, fy)
+    -- https://love2d.org/wiki/Body:applyForce
+    -- Body:applyForce( fx, fy, x, y )
+    self.body:applyForce(fx, fy)
+end
+
+function Box2dCollider:applyLinearImpulse(ix, iy)
+    -- https://love2d.org/wiki/Body:applyLinearImpulse
+    -- Body:applyLinearImpulse( ix, iy, x, y )
+    self.body:applyLinearImpulse(ix, iy)
+end
+
+function Box2dCollider:setFixedRotation(b)
+    self.body:setFixedRotation(b)
+end
+
+function Box2dCollider:setCollisionClass(collision_class_name)
     if not self.world.collision_classes[collision_class_name] then
         error('Collision class ' .. collision_class_name .. ' does not exist.')
         return
@@ -115,8 +149,8 @@ function Collider:setCollisionClass(collision_class_name)
     self.collision_class_name = collision_class_name
 end
 
-function Collider:on(collision_type, other_collision_class_name, event)
-    self.collision_events[collision_type] = function(collider_a, collider_b, ...)
+function Box2dCollider:on(collision_type, other_collision_class_name, event)
+    self.collision_events[collision_type] = function(collider_a, collider_b)
         local otherCollider = nil
         if self == collider_a then
             otherCollider = collider_b
@@ -132,7 +166,7 @@ function Collider:on(collision_type, other_collision_class_name, event)
     end
 end
 
-function Collider:isTouching(other)
+function Box2dCollider:isTouching(other)
     -- `other` may be a collision class name or specifically another body
     if type(other) == 'string' then
         -- user passed collision class string
@@ -157,4 +191,4 @@ function Collider:isTouching(other)
     end
 end
 
-return Collider
+return Box2dCollider
