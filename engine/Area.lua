@@ -1,18 +1,17 @@
 local Object = require 'lib.classic'
-local M = require 'lib.moses'
-local Physics = require 'engine.Physics'
+local lume = require 'lib.lume'
 
 local Area = Object:extend()
-local OBJ_DIR = 'obj.'
 
-function Area:new(room)
+function Area:new(room, opts)
     self.room = room
     self.game_objects = {}
     self.world = nil
+    self.opts = opts or {}
 end
 
 function Area:update(dt)
-    -- We update the physics world before updating all the 
+    -- We update the physics world before updating all the
     -- game objects because we want to use up to date information
     -- for our game objects, and that will happen only after the
     -- physics simulation is done for this frame.
@@ -35,10 +34,29 @@ function Area:update(dt)
 end
 
 function Area:draw()
-    if self.world then self.world:draw() end
+    -- draw all game objects in area
     for _, game_object in ipairs(self.game_objects) do
         game_object:draw()
     end
+
+    -- Debug code from: https://love2d.org/wiki/Tutorial:PhysicsDrawing#Final_code
+    -- if self.world and self.opts.debug then
+    --     for _, body in pairs(self.world:getBodies()) do
+    --         for _, fixture in pairs(body:getFixtures()) do
+    --             local shape = fixture:getShape()
+
+    --             love.graphics.setColor(1, 0, 0)
+    --             if shape:typeOf('CircleShape') then
+    --                 local cx, cy = body:getWorldPoints(shape:getPoint())
+    --                 love.graphics.circle("line", cx, cy, shape:getRadius())
+    --             elseif shape:typeOf('PolygonShape') then
+    --                 love.graphics.polygon("line", body:getWorldPoints(shape:getPoints()))
+    --             else
+    --                 love.graphics.line(body:getWorldPoints(shape:getPoints()))
+    --             end
+    --         end
+    --     end
+    -- end
 end
 
 function Area:destroy()
@@ -57,22 +75,20 @@ function Area:destroy()
     end
 end
 
-function Area:addGameObject(game_object_type, x, y, opts)
-    local object_opts = opts or {}
-    local game_object = require(OBJ_DIR .. game_object_type)(self, x or 0, y or 0, object_opts)
-    game_object.class = game_object_type
-    table.insert(self.game_objects, game_object)
-    return game_object
+function Area:addGameObjects(game_objects)
+    for _, game_object in pairs(game_objects) do
+        table.insert(self.game_objects, game_object)
+    end
 end
 
 function Area:getGameObjects(fn)
-    return M.select(self.game_objects, fn)
+    return lume.filter(self.game_objects, fn)
 end
 
 function Area:queryCircleArea(x, y, radius, object_types)
     local out = {}
     for _, game_object in ipairs(self.game_objects) do
-        if M.any(object_types, game_object.class) then
+        if lume.find(object_types, game_object.class) ~= nil then
             local d = self:distance(x, y, game_object.x, game_object.y)
             if d <= radius then
                 table.insert(out, game_object)
@@ -85,7 +101,7 @@ end
 function Area:getClosestObject(x, y, radius, object_types)
     local lowest = { d = nil, object = nil }
     for _, game_object in ipairs(self.game_objects) do
-        if M.any(object_types, game_object.class) then
+        if lume.find(object_types, game_object.class) ~= nil then
             local d = self:distance(x, y, game_object.x, game_object.y)
             if not lowest.d then
                 lowest.d = d
@@ -97,10 +113,6 @@ function Area:getClosestObject(x, y, radius, object_types)
         end
     end
     return lowest.object
-end
-
-function Area:addPhysicsWorld(xGravity, yGravity, bodiesCanSleep)
-    self.world = Physics.createNewWorld(xGravity, yGravity, bodiesCanSleep)
 end
 
 function Area:distance(x1, y1, x2, y2)
